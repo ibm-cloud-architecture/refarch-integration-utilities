@@ -1,0 +1,2 @@
+#!/bin/bash
+curl  -H "content-type: application/json" -H "accept: application/json" -H "X-IBM-Client-Id: 1dc939dd-c8dc-4d7e-af38-04f9afb78f60" "https://cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/sample-inventory-api/items"
