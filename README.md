@@ -16,6 +16,7 @@ lsb_release -a
 
 ## LDAP configuration
 
+
 ## Secure Gateway configuration
 The [article](docs/ConfigureSecureGateway.md) goes in details on how to configure IBM secure gateway service in Bluemix and the client configuration.
 
