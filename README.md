@@ -1,7 +1,25 @@
 # Integration Utility Server
-This project is for the sources of different scripts used to manage a utility server as part of the Brown compute configuration. The server is used for IBM secure gateway client, jenkins and other things.
+This project is used to define a Utility server used to host IBM secure gateway client, jenkins server for CI/CD, LDAP server
 
 This project is part of the 'IBM Integration Reference Architecture' suite, available at [https://github.com/ibm-cloud-architecture/refarch-integration](https://github.com/ibm-cloud-architecture/refarch-integration)
 
+## Server configuration
+The following steps can be done manually to create a VM with Ubuntu. We are using vmware vSphere center.
+* Create a vm machine for a Ubuntu (64 bits) OS using ESXi 5.5
+* Get the iso image for ubuntu 16.10
+*
+
+To validate the OS version user
+```
+lsb_release -a
+```
+
+## LDAP configuration
+
+
 ## Secure Gateway configuration
-The article goes in details on what was done for secure gateway definition and client configuration. [SG](docs/ConfigureSecureGateway.md)
+The [article](docs/ConfigureSecureGateway.md) goes in details on how to configure IBM secure gateway service in Bluemix and the client configuration.
+
+## Continuous integration with jenkins
+
+![New Pipeline](docs/jk-new-pipeline.png)
