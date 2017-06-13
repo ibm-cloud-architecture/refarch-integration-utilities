@@ -1,9 +1,10 @@
-#!/usr/bin/expect 
+#!/usr/bin/expect
 set timeout 20
 set cmd [lrange $argv 1 end]
 set p [lindex $argv 0]
 eval spawn $cmd
+expect "Pipeline"
+send "Yes\r";
 expect "assword:"
 send "$p\r";
 interact
-
