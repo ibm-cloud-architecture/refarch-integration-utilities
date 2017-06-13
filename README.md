@@ -18,6 +18,6 @@ $ lsb_release -a
 The [article](docs/ConfigureSecureGateway.md) goes in details on how to configure IBM secure gateway service in Bluemix and the client configuration.
 
 ## Continuous integration with Jenkins
-See details in this [note](docs/cicd.ms)
+See details in this [note](docs/cicd.md)
 
 ## LDAP configuration
