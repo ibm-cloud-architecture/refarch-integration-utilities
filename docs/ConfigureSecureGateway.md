@@ -14,7 +14,7 @@ You need to have
 The following diagram illustrates what needs to be done to setup secure connection between Bluemix application and an on-premise end point being an API Connect exposed API.
 ![High level view](./sg-hl-view.png)
 
-### 1- Create secure gateway service in Bluemix
+### Step 1- Create secure gateway service in Bluemix
 In your Bluemix account / organization create a IBM Secure Gateway service using the path Catalog> Integrate > Secure Gateway.  In the diagram below the service is named "Secure Gateway-p4".
 
  Add one instance of gateway (e.g. named BrownSecureGtw), using security token and token expiration options. In the Bluemix Secure Gateway service >  Manage menu access the Dashboard user interface, and then the settings menu (via the gear icon):  
@@ -25,8 +25,10 @@ In your Bluemix account / organization create a IBM Secure Gateway service using
 
  The security token key string and the Gateway ID are needed for the secure gateway client settings you will do later.
 
-### 2- Configure secure gateway client server
-On the on-premise server install one of the secure gateway client. During development and for convenience we picked up the Docker image by performing the following steps.
+### Step 2- Configure secure gateway client server
+On the on-premise server install one of the secure gateway client.
+#### Docker
+During development and for convenience you may want to pick up the Docker image by performing the following steps.
 
  ```
 # download the docker image
@@ -43,33 +45,100 @@ $ docker attach <docker id>
 # to restart a container
 $ docker restart <dockerid>
 ```  
-The following image presents the secure gateway client command line interface with the results from the command "C 1" to display the configuration
+The following image presents the secure gateway client command line interface with the results from the command `CLI> C 1` to display the configuration information  
+
 ![CLI](sg-cli.png)  
 
  The prompt  string represents the unique identifier of the client, it will be visible on the Bluemix Secure Gateway dashboard when the client is connected.
 
- For production deployment, the tests illustrate some performance challenges with docker image, so direct installation of the secure gateway client based on the operation is a better option. To do so see the specific [note](sg_install_linux_client.md)
+#### Direct install
+ For production deployment, the tests illustrate some performance challenges with docker image, so we decided to directly install the secure gateway client. The steps are defined in the [product documentation], but as there are some questions / steps not clear we summarize them here too:
+* Using your Web browser, go to **bluemix** [console] > Secure Gateway Instance > Select the gateway and *connect client* choice:
+![Add client](sg_add_client.png)  
+In the software installer section, select your target OS, it should download the installer file. Then do the following:  
 
-### 3- Define destination for secure gateway service
-Back to the Secure Gateway Service dashboard, the client should be visible in the list of connected client. The client id should match the id returned by the docker run as illustrated below (the string with _3R2)
+* Install the client code using the following command on **Ubuntu**. Be sure to be root user or a user who is part of the *sudoers* (see this note to add user as sudoers)
 
- The client makes a connection to the service instance running in bluemix and then open a bi-directional tunnel so data can be sent from a Bluemix app to the on-premise server. In the case of this integration, the server is the API Connect gateway running on IP 172.6.254.89:443.
+```
+sudo dpkg -i ibm-securegateway-client-1.4.1+client_amd64.deb
+```
+For **RedHat 7.x**:
+```
+rpm -ivhf --force ibm-securegateway-client-1.4.1+client_amd64.rpm
+```
+During the installation the followng information are needed:
+ * gateway ID: it can be found in Bluemix Secure Gateway instance
+ * security token: it is also available in the Secure Gateway instance
+ * if you want to start the secure gateway automatically or not
+ * Specify the trace level: information
+ * Specify the Access Control List (ACL) file: specify none for the moment. See the section about [ACL]()
+ * Provide the port number for the web based user interface: 9003
+
+The command adds a *secgwadmin* group and the *secgwadmin* user, and persists the configuration in the file `/etc/ibm/sgenvironment.conf`. It also defines some links to `/usr/local/bin` so the secure gateway client can be started from command line.
+
+Verify the configuration, the connection and the port number the user interface is using
+```
+cat /var/log/securegateway/client_console.log
+
+IBM Bluemix Secure Gateway Client Version 1.7.0
+
+[INFO] (Client ID 1259) No password provided. The UI will not require a password for access
+[WARN] (Client ID 1259) UI Server started. The UI is not currently password protected
+[INFO] (Client ID 1259) Visit localhost:9003/dashboard to view the UI.
+[INFO] (Client ID 1735) Setting log level to INFO
+[INFO] (Client ID 1735) The Secure Gateway tunnel is connected
+[INFO] (Client ID qsn47KM8iTa_6pQ) Your Client ID is qsn47KM8iTa_6pQ
+(Client ID qsn47KM8iTa_6pQ) Synchronizing ACL rules
+
+```
+
+To stop the client use the systemctl command like:
+`sudo systemctl stop securegateway_client` and to disable at system boot time `systemctl disable securegateway_client`
+
+To get the status of the secure gateway on the server run the command:
+` systemctl status securegateway_client` then to restart `sudo systemctl start securegateway_client`
+
+Here is an example of trace:
+```
+brownuser@brownutility:/var/log/securegateway$ systemctl status securegateway_client
+● securegateway_client.service - IBM Secure Gateway Client for Bluemix
+   Loaded: loaded (/lib/systemd/system/securegateway_client.service; enabled; vendor preset: enabled)
+   Active: active (running) since Wed 2017-06-14 17:10:26 PDT; 26s ago
+  Process: 5682 ExecStop=/bin/bash -c /usr/local/bin/securegateway_clientd stop (code=exited, status=0/SUCCESS)
+ Main PID: 5750 (securegateway_c)
+    Tasks: 22 (limit: 4915)
+   Memory: 62.2M
+      CPU: 1.172s
+   CGroup: /system.slice/securegateway_client.service
+           ├─5750 /bin/bash /usr/local/bin/securegateway_clientd start
+           ├─5766 /bin/bash /usr/local/bin/securegateway_clientd start
+           ├─5767 sgclient_parent
+           └─5774 sgclient_qsn47KM8iTa_qpJ
+
+Jun 14 17:10:26 brownutility systemd[1]: Started IBM Secure Gateway Client for Bluemix.
+Jun 14 17:10:26 brownutility bash[5750]: Performing start operation
+
+```
+
+### Step 3- Define destination for secure gateway service
+In Bluemix Console, back to the Secure Gateway Service dashboard, the client should be visible in the list of connected clients. The client id should match the id returned by the secure client trace as illustrated below (the string with _3R2)
+
+ The client makes a connection to the service instance running in Bluemix and then opens a bi-directional tunnel so data can be sent from a Bluemix app to the on-premise server. In the case of this integration, the server is the API Connect gateway running on IP 172.16.50.8:443.
 
  Use the add destination from the Dashboard, and follow the step by step wizards
  ![On-premise destination](add-destination.png)
 
- Once done the new destination is added, and using the gear icon it is possible to access the detail of the destination. One important elements is the cloud host name that is needed for the bluemix app to call the on-premise app.
+ Once done the new destination is added, and using the gear icon it is possible to access the detail of the destination. One important elements to remember is the **Cloud Host** name, as it is needed for the bluemix app to call the on-premise app.
  ![proxy](cloud-host.png)
 
+### Step 4- Modify the application code to access secure gateway proxy
 
-### 4- Modify the application code to access secure gateway proxy
-
-When the client is set up and running, we need to add destination for the on-premise application end-point. You need to gather a set of information for your end points:
+When the secure gateway client is set up and running, we need to add destination for the on-premise application end-point. You need to gather a set of information for your end points:
  * The IP address or host name
- * The type of protocol to support, HTTS or
- * any user authentication credentials used to access the service.
+ * The type of protocol to support, HTTPS or HTTP
+ * And any user authentication credentials used to access the service.
 
- The example below is a simple nodejs script to do a HTTP request to the bluemix proxy. The headers settings are coming from the API Connect configuration. (See []())
+ The example below is a simple nodejs script to do a HTTPS request to the bluemix proxy. The headers settings are coming from the API Connect configuration. (See []())
 ```javascript
 request.get(
     {url:'https://cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/sample-inventory-api/items',
@@ -91,10 +160,10 @@ In the secure gateway client command line interface it is possible to set the tr
 ```
 l DEBUG
 ```
-so it is possible to see the connection coming in from Bluemix Secure gateway  as illustrated in figure below.
+So it is possible to see the connection coming in from Bluemix Secure gateway  as illustrated in figure below.
 ![SG Trace](sg-trace.png)  
 
-### 5- Download the API Connect certificate  
+### Step 5- Download the API Connect certificate  
  The connection between bluemix app to back end data access service needs to be over HTTPS, HTTP over SSL. To make SSL working end to end we need to do certificate management, configure trust stores, understand handshaking, and other details that must be perfectly aligned to make the secure communication work. [See SSL summary](ssl.md)
 
 To access the certificate use a Web browser, like Firefox, to the target URL using HTTPS. Access the Security > Certificate from the locker icon on left side of the URL field. (Each web browser has their own way to access to the self certified certificates)
@@ -113,9 +182,12 @@ $ ls -al /etc/ssl/certs | grep APIConnect
 $ openssl s_client -showcerts -connect 172.16.254.89:443
 ```
 
-### 6- Add certificate to destination  
+### Step 6- Add certificate to destination  
 Save the certificate as file, (e.g. APIConnect.crt) and then upload it in the destination configuration of the Secure Gateway Bluemix Service.
 ![destination](TLS_Options.png)
+
+## ACL
+ Access Control List entries determine what the client is allowed to access on a host:port basis. To fine control the access the API Connect Gateway IP and Port number are specified, using the Secure Gateway Client dashboard user interface at 'http://localhost:9003/dashboard'. The local host being the BrownUtility server.
 
 ## Specific to Java Trust store
 Java Runtime Environment comes with a pre-configure set of trusted certificate authorities. The collection of trusted certificates can be found at $JAVA_HOME/jre/lib/security/cacerts The tests are run on the utility server, so the API Connect server CA certificate needs to be in place. To do so the following needs to be done:
@@ -126,11 +198,13 @@ $ sudo keytool -import -trustcacerts -alias brownapic -file APIConnect.crt -keys
 $ keytool -list -keystore $JAVA_HOME/jre/lib/security/cacerts
 ```
 
+Attention these steps will make the Java program using HTTP client working only if the certificate is defined by a certified agency. The self generated certificate has a CN attribute sets to a non-hostname, and HTTP client in Java when doing SSL connection are doing a hostname verification. See the test project for the detail on how it was bypassed, in Brown compute.
+
 ## References
-* [Bluemix Secure Gateway Service Documentation](https://console.ng.bluemix.net/docs/services/SecureGateway/secure_gateway.html)
+* [Bluemix Secure Gateway Service/product Documentation](https://console.ng.bluemix.net/docs/services/SecureGateway/secure_gateway.html)
 * [Reaching Enterprise Backend with Bluemix Secure Gateway via SDK API](https://www.ibm.com/blogs/bluemix/2015/04/reaching-enterprise-backend-bluemix-secure-gateway-via-sdk-api/)
 * [Reaching enterprise backend with Bluemix Secure Gateway via console](https://www.ibm.com/blogs/bluemix/2015/04/reaching-enterprise-backend-bluemix-secure-gateway/)
-* Real life experience with Secure Gateway
+* Real life experience with Secure Gateway with nice FAQ, a must to read
 [part 1](https://www.ibm.com/blogs/bluemix/2015/11/secure-gateway-in-production-part1/)
 [part 2](https://www.ibm.com/blogs/bluemix/2015/11/secure-gateway-in-production-part2/)
 * [](https://www.ibm.com/blogs/bluemix/2015/05/bluemix-hybrid-integration/)

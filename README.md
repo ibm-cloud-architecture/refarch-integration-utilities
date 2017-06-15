@@ -7,7 +7,9 @@ This project is part of the 'IBM Integration Reference Architecture' suite, avai
 The following steps can be done manually to create a VM with Ubuntu. We are using vmware vSphere center.
 * Create a vm machine for a Ubuntu (64 bits) OS using ESXi 5.5
 * Get the iso image for ubuntu 16.10
-*
+* Create a user *brownuser*
+* setup ssh server
+* disable firewall
 
 To validate the OS version user
 ```
