@@ -23,3 +23,6 @@ The [article](docs/ConfigureSecureGateway.md) goes in details on how to configur
 See details in this [note](docs/cicd.md)
 
 ## LDAP configuration
+The LDAP server used in this project is openLDAP. IT was configured via the following instructions:
+https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-a-basic-ldap-server-on-an-ubuntu-12-04-vps
+Once installed, I also installed PHPldapadmin and configured following instructions from the link above. See config.php.
