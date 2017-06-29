@@ -15,7 +15,7 @@ To validate the OS version user
 ```
 $ lsb_release -a
 ```
-
+To complement the installation the [following](docs/sg_install_linux_client.md) was done
 ## Secure Gateway configuration
 The [article](docs/ConfigureSecureGateway.md) goes in details on how to configure IBM secure gateway service in Bluemix and the client configuration.
 
@@ -23,6 +23,13 @@ The [article](docs/ConfigureSecureGateway.md) goes in details on how to configur
 See details in this [note](docs/cicd.md)
 
 ## LDAP configuration
-The LDAP server used in this project is openLDAP. IT was configured via the following instructions:
+The LDAP server used in this project is openLDAP. It was configured via the following instructions:
 https://www.digitalocean.com/community/tutorials/how-to-install-and-configure-a-basic-ldap-server-on-an-ubuntu-12-04-vps
-Once installed, I also installed PHPldapadmin and configured following instructions from the link above. See config.php.
+The base DNs of the LDAP server is dc=csplab dc=local.
+
+Once installed, PHPldapadmin was installed and configured following instructions from the link above. See config.php.
+
+The following structure was done for testing:
+![](docs/csplab.png)
+
+To validate the LDAP server is working fine:
