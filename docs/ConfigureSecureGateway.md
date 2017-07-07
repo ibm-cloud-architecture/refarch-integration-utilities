@@ -1,13 +1,19 @@
 # Configure Secure Gateway
-This article addresses in details how the Secure gateway was configured for Brown Compute. Secure Gateway helps to expose a public URL in Bluemix cloud to access on-premise services (web service, REST,...) with secure connection.
+This article addresses in details how the Secure gateway was configured for **Brown Compute**.
+
+[IBM Secure Gateway Service](https://console.ng.bluemix.net/docs/services/SecureGateway/secure_gateway.html) (SG) provides secure connectivity and establishes a tunnel between your Bluemix organization and the remote location that you want to connect to. Remote locations could be other cloud platform but in our case are on-premise services (web service, REST, LDAP...).
+
+This is a major component for [Hybrid integration](https://github.com/ibm-cloud-architecture/refarch-integration) so very important to understand how it works and how to configure it with TLS settings. Alternate to SG is to set a private VPN.
+
+## Goal
+The connection from the Bluemix app has to be secure end to end. So we are configuring the following approach: TLS mutual auth between bluemix app and secure gateway, and TLS between destination and secure gateway   
+![](sg-tls-view.png)  
 
 ## Pre-requisites
 You need to have
 * a Bluemix account
-* a server, linux based, within the same network as the application end point to the destination. In this case the API Connect gateway server.
-* Have administration privileges on the server
-
-[IBM Secure Gateway Service](https://console.ng.bluemix.net/docs/services/SecureGateway/secure_gateway.html) provides secure connectivity and establishes a tunnel between your Bluemix organization and the remote location that you want to connect to.
+* a server, linux based, within the same network as the application end point you want to integrate. In this case the API Connect gateway server.
+* administration privileges on this server
 
 
 ## Steps to perform
@@ -21,15 +27,15 @@ In your Bluemix account / organization create a IBM Secure Gateway service using
 ![](sg-dashboard.png)
 
  select security token and token expiration options.
-![](sg-add-gtw.png)  
+![](sg-add-gtw.png){:height="312px" width="857px"}
 
- Double click on the newly created gateway to access the gateway dashboard where you should be able to add client, destination and see the gateway parameter.  
+ Double click on the newly created gateway, so you can access the gateway **dashboard** from where you should be able to add client, destination and see the gateway parameters.  
 ![](sg-gtw-dash.png)
 
-For example via the settings menu (the gear icon on the right side of the gateway name), you should be able to access the gateway details:  
+For example, via the settings menu (the gear icon on the right side of the gateway name), you should be able to access the gateway details:  
  ![Gateway details](sg-serv-details.png)
 
- The security token key string and the Gateway ID are needed for the configuration of the secure gateway client you will do in next section. The node is the name of the server you will use from the bluemix app to connect to the gateway. The following code snippet is part of the *Case Inc Portal* app:
+ The `security token key` string and the `Gateway ID` are needed when you will configure the secure gateway client (see next section). The `Node` is the name of the server you will use from the bluemix app to connect to the gateway. The URL used by the client application point to this node:
  ```javascript
  // Access Inventory api exposed via API Connect with the following path: csplab/sb/sample-inventory-api
  // and with secure gateway end point  cap-sg-prd-5.integration.ibmcloud.com
