@@ -1,5 +1,5 @@
 # Configure Secure Gateway
-This article addresses in details how the Secure gateway was configured for Brown Compute.
+This article addresses in details how the Secure gateway was configured for Brown Compute. Secure Gateway helps to expose a public URL in Bluemix cloud to access on-premise services (web service, REST,...) with secure connection.
 
 ## Pre-requisites
 You need to have
@@ -17,16 +17,39 @@ The following diagram illustrates what needs to be done to setup secure connecti
 ### Step 1- Create secure gateway service in Bluemix
 In your Bluemix account / organization create a IBM Secure Gateway service using the path Catalog> Integrate > Secure Gateway.  In the diagram below the service is named "Secure Gateway-p4".
 
- Add one instance of gateway (e.g. named BrownSecureGtw), using security token and token expiration options. In the Bluemix Secure Gateway service >  Manage menu access the Dashboard user interface, and then the settings menu (via the gear icon):  
- ![Gateway settings](./gear.png)  
+ Add one instance of gateway using the + icon (e.g. named BrownSecureGtw),
+![](sg-dashboard.png)
 
- to access the server details:  
+ select security token and token expiration options.
+![](sg-add-gtw.png)  
+
+ Double click on the newly created gateway to access the gateway dashboard where you should be able to add client, destination and see the gateway parameter.  
+![](sg-gtw-dash.png)
+
+For example via the settings menu (the gear icon on the right side of the gateway name), you should be able to access the gateway details:  
  ![Gateway details](sg-serv-details.png)
 
- The security token key string and the Gateway ID are needed for the secure gateway client settings you will do later.
+ The security token key string and the Gateway ID are needed for the configuration of the secure gateway client you will do in next section. The node is the name of the server you will use from the bluemix app to connect to the gateway. The following code snippet is part of the *Case Inc Portal* app:
+ ```javascript
+ // Access Inventory api exposed via API Connect with the following path: csplab/sb/sample-inventory-api
+ // and with secure gateway end point  cap-sg-prd-5.integration.ibmcloud.com
+ const apiUrl="cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/sample-inventory-api/items";
+ request.get(
+     {url:apiUrl
+    })
+ ```   
 
 ### Step 2- Configure secure gateway client server
-On the on-premise server install one of the secure gateway client.
+On the on-premise server install one of the secure gateway client: docker image or OS specific client.
+
+Using your Web browser, within the Secure Gateway Dash board > Select `+ Connect client` choice:
+ ![Add client](sg-add-client.png)
+
+select one of the installer:
+![](sg-client-installer.png)
+
+`Remark: the Gateway ID and Security token in this screen match the detail parameter of the secure gateway`.
+
 #### Docker
 During development and for convenience you may want to pick up the Docker image by performing the following steps.
 
@@ -49,12 +72,12 @@ The following image presents the secure gateway client command line interface wi
 
 ![CLI](sg-cli.png)  
 
- The prompt  string represents the unique identifier of the client, it will be visible on the Bluemix Secure Gateway dashboard when the client is connected.
+The prompt  string represents the unique identifier of the client, it will be visible on the Bluemix Secure Gateway dashboard when the client is connected.
+
 
 #### Direct install
- For production deployment, the tests illustrate some performance challenges with docker image, so we decided to directly install the secure gateway client. The steps are defined in the [product documentation], but as there are some questions / steps not clear we summarize them here too:
-* Using your Web browser, go to **bluemix** [console] > Secure Gateway Instance > Select the gateway and *connect client* choice:
-![Add client](sg_add_client.png)  
+For production deployment, the tests illustrated some performance challenges with docker image, so we decided to directly install the secure gateway client. The steps are defined in the [product documentation] depending of the server OS, but as there are some questions / steps not clear we summarize them here too:  
+
 In the software installer section, select your target OS, it should download the installer file. Then do the following:  
 
 * Install the client code using the following command on **Ubuntu**. Be sure to be root user or a user who is part of the *sudoers* (see this note to add user as sudoers)
@@ -120,85 +143,62 @@ Jun 14 17:10:26 brownutility bash[5750]: Performing start operation
 
 ```
 
+It is also possible to verify the connection using a Web Browser a the url https://locahost:9003/dashboar on the client host
+![](sg-client-dash.png)  
+The Client ID should match the ID on the gateway server in Bluemix. Same for the Gateway ID.
+
 ### Step 3- Define destination for secure gateway service
-In Bluemix Console, back to the Secure Gateway Service dashboard, the client should be visible in the list of connected clients. The client id should match the id returned by the secure client trace as illustrated below (the string with _3R2)
+In Bluemix Console, back to the Secure Gateway dashboard, the client should be visible in the list of connected clients. The client id should match the id returned by the secure client trace as illustrated below (the string with _3R2)
 
- The client makes a connection to the service instance running in Bluemix and then opens a bi-directional tunnel so data can be sent from a Bluemix app to the on-premise server. In the case of this integration, the server is the API Connect gateway running on IP 172.16.50.8:443.
+The client makes a connection to the service instance running in Bluemix and then opens a bi-directional tunnel so data can be sent from a Bluemix app to the on-premise server. In the case of this integration, the server is the API Connect gateway running on IP 172.16.50.8:443.
 
- Use the add destination from the Dashboard, and follow the step by step wizards
- ![On-premise destination](add-destination.png)
+ Use the add destination from the Dashboard,
+ ![On-premise destination](add-destination.png)   
 
- Once done the new destination is added, and using the gear icon it is possible to access the detail of the destination. One important elements to remember is the **Cloud Host** name, as it is needed for the bluemix app to call the on-premise app.
- ![proxy](cloud-host.png)
+and follow the step by step wizards:
+* This is an on-premise destination as the API Connect gateway server runs there
+* Specific the security connection type between the client and the secure gateway and then between the secure gateway client and the final destination. The following figure illustrates one potential settings (TLS mutual auth between bluemix app and secure gateway, and TLS between destination and secure gateway):   
+![](sg-tls-view.png)  
 
-### Step 4- Modify the application code to access secure gateway proxy
-
-When the secure gateway client is set up and running, we need to add destination for the on-premise application end-point. You need to gather a set of information for your end points:
- * The IP address or host name
- * The type of protocol to support, HTTPS or HTTP
- * And any user authentication credentials used to access the service.
-
- The example below is a simple nodejs script to do a HTTPS request to the bluemix proxy. The headers settings are coming from the API Connect configuration. (See []())
-```javascript
-request.get(
-    {url:'https://cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/sample-inventory-api/items',
-    timeout: 10000,
-    headers: {
-      'x-ibm-client-id': '1dc939dd-xxxx',
-      'accept': 'application/json',
-      'content-type': 'application/json'
-      }
-    },
+Once done the new destination is added, and using the gear icon it is possible to access the detail of the destination.
+The TLS options below presents the matching setting of the previous high level view.
+![](sg-tls-options.png)
+So we need to update the certificate. The `apicgw.pem` is a file created by executing the command:
 ```
-
- What is important to understand that the cap-sg-prd-5... is a public server, so it is possible to use *curl* to test the connection outside of any app code.
-  ```
-curl -H "content-type:application/json" -H "accept: application/json" -H "x-ibm-client-id: 1dc939dd-xxxx"  https://cap-sg-prd-5.integration.ibmcloud.com:16582/csplab/sb/sample-inventory-api/items
-  ```
-
-In the secure gateway client command line interface it is possible to set the trace in Debug mode using the command below
+echo | openssl s_client -connect 172.16.50.8:443 -showcerts 2>&1 | sed  -n '/BEGIN CERTIFICATE/,/-END CERTIFICATE-/p'> apicgw.pem
 ```
-l DEBUG
-```
-So it is possible to see the connection coming in from Bluemix Secure gateway  as illustrated in figure below.
-![SG Trace](sg-trace.png)  
+and then uploaded to the Destination definition inside the gateway dashboard.
+One important elements to remember is the **Cloud Host** name, as it is needed for the bluemix app to call the on-premise app.
+![proxy](cloud-host.png)
 
-### Step 5- Download the API Connect certificate  
- The connection between bluemix app to back end data access service needs to be over HTTPS, HTTP over SSL. To make SSL working end to end we need to do certificate management, configure trust stores, understand handshaking, and other details that must be perfectly aligned to make the secure communication work. [See SSL summary](ssl.md)
 
-To access the certificate use a Web browser, like Firefox, to the target URL using HTTPS. Access the Security > Certificate from the locker icon on left side of the URL field. (Each web browser has their own way to access to the self certified certificates)
+The server provides a set of certificates. Download the authentication files from the detail view. It is a zip file containing the TLS certificates.  The following table illustrates what to do with those files:
 
-![Certificate](APIC-cert.png)
+| File  | Intent |  Usage  |
+| ----- | ------ | --- |
+| apicgw.pem | Certificate from destination host | It was uploaded in Secure Gateway Destination definition |
+| qsn47KM8iTa_clientCert.pem | certificate for client | We selected auto-generate to automatically create a self-signed certificate/key pair. This is one of the file. See note below|
+| qsn47KM8iTa_clientKey.pem | private key for a client | Needed as input for the key store on client side |
+| DigiCertCA2.pem | Certificate Authority certificate | Needed to add it to client trust store |
+| DigiCertTrustedRoot.pem | Secondary CA certificate | Needed to add it to client trust store |
+| secureGatewayCert.pem | Secure Gateway certificate | Also needed to add to client trust store|
+| ----- | ------ | -- |  
+All those files are saved in the Case Inc Portal repository under ssl folder. For security reason they are not push in git.
 
-Use the export button to create a new local file with suffix .crt. From there you need to persist the file on the operating system trust store.
-
- ```
-# get certificate in the form of a .crt file, then mv it to ca-certificate
-$ sudo mv APIConnect.crt /usr/local/share/ca-certificate
-# To add en try to the certificates use the command
-$ sudo update-ca-certificates
-# verify with
-$ ls -al /etc/ssl/certs | grep APIConnect
-$ openssl s_client -showcerts -connect 172.16.254.89:443
-```
-
-### Step 6- Add certificate to destination  
-Save the certificate as file, (e.g. APIConnect.crt) and then upload it in the destination configuration of the Secure Gateway Bluemix Service.
-![destination](TLS_Options.png)
+The client certificate and client key are used to create a key store with a command like:
+`openssl pkcs12 -export -in "./ssl/qsn47KM8iTa_O495D_destCert.pem" -inkey "./ssl/qsn47KM8iTa_O495D_destKey.pem" -out "ssl/sg_key.p12" -name "CaseIncCliCert" -noiter -password pass:"asuperpwd"`
 
 ## ACL
  Access Control List entries determine what the client is allowed to access on a host:port basis. To fine control the access the API Connect Gateway IP and Port number are specified, using the Secure Gateway Client dashboard user interface at 'http://localhost:9003/dashboard'. The local host being the BrownUtility server.
 
-## Specific to Java Trust store
-Java Runtime Environment comes with a pre-configure set of trusted certificate authorities. The collection of trusted certificates can be found at $JAVA_HOME/jre/lib/security/cacerts The tests are run on the utility server, so the API Connect server CA certificate needs to be in place. To do so the following needs to be done:
+## Tracing the secure gateway client
+ In the secure gateway client command line interface it is possible to set the trace in Debug mode using the command below
+ ```
+ l DEBUG
+ ```
+ So it is possible to see the connection coming in from Bluemix Secure gateway  as illustrated in figure below.
+ ![SG Trace](sg-trace.png)  
 
-Remote connect to the API Connect Gateway Server with a Web Browser and download the certificate as .crt file
-```
-$ sudo keytool -import -trustcacerts -alias brownapic -file APIConnect.crt -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
-$ keytool -list -keystore $JAVA_HOME/jre/lib/security/cacerts
-```
-
-Attention these steps will make the Java program using HTTP client working only if the certificate is defined by a certified agency. The self generated certificate has a CN attribute sets to a non-hostname, and HTTP client in Java when doing SSL connection are doing a hostname verification. See the test project for the detail on how it was bypassed, in Brown compute.
 
 ## References
 * [Bluemix Secure Gateway Service/product Documentation](https://console.ng.bluemix.net/docs/services/SecureGateway/secure_gateway.html)

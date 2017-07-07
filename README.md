@@ -32,4 +32,42 @@ Once installed, PHPldapadmin was installed and configured following instructions
 The following structure was done for testing:
 ![](docs/csplab.png)
 
-To validate the LDAP server is working fine:
+To validate the LDAP server is working fine execute the command `ldapsearch -x -LLL -h 172.16.50.9  -b "dc=csplab,dc=local"`, it should return something like:
+```
+dn: dc=csplab,dc=local
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: csplab
+dc: csplab
+
+dn: cn=admin,dc=csplab,dc=local
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+cn: admin
+description: LDAP administrator
+
+dn: ou=csplab,dc=csplab,dc=local
+objectClass: organizationalUnit
+objectClass: top
+ou: csplab
+
+dn: cn=csplab-group,ou=csplab,dc=csplab,dc=local
+gidNumber: 500
+cn: csplab-group
+objectClass: posixGroup
+objectClass: top
+
+dn: cn=boyerje,cn=csplab-group,ou=csplab,dc=csplab,dc=local
+givenName: Jerome
+gidNumber: 500
+homeDirectory: /home/users/boyerje
+sn: boyer
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: top
+uidNumber: 1002
+uid: boyerje
+cn: boyerje
+...
+```
