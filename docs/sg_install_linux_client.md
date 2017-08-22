@@ -16,7 +16,7 @@ iface lo inet loopback
 auto ens160
 iface ens160 inet dhcp
 ```
-To set static IP here are some example of settings
+To set static IP  here are some example of settings
 ```
 # The primary network interface
 auto ens160
