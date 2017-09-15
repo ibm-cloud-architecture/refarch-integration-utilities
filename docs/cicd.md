@@ -1,5 +1,5 @@
 # Continuous integration with Jenkins
-For continuous integration and deployment we are using Jenkins server on the *Utility* server. With Jenkins we can do continuous build, testing and deployment of software components to target servers.
+For continuous integration and deployment we are using Jenkins server deployed on the *Utility* virtual machine. With Jenkins we can do continuous build, test and deployment of software components to different target servers.
 
 ## Installation
 The installation is following the non-docker install as described [here]( https://jenkins.io/doc/book/getting-started/installing), specially the following steps have to be done:
@@ -11,9 +11,9 @@ $ sudo apt-get update
 $ sudo apt-get install jenkins
 ```
 doing a ps -ef | grep jenkins we can see jenkins server is up and running as a java program. Pointing a web browser to http://172.16.254.32:8080 goes to the administration wizard to complete the configuration. You need to get the created password using: sudo cat /var/lib/jenkins/secrets/initialAdminPassword.
-The wizard is also asking for a user, so we used admin/admin01 and to install the standard plugins.
+The wizard is also asking for a user, so we used *admin/admin01* and to install the standard plugins.
 
-As some of the code are Java based, and on the ubuntu image we had **javac** was not installed the following command add JDK 1.8.
+As some of the code are Java based, we had **javac**:
 ```
 $ sudo apt-get install openjdk-8-jdk
 ```
